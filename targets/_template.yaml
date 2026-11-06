@@ -1,0 +1,48 @@
+# ============================================================
+# auto-hole 目标接入模板（复制为 targets/<名称>.yaml 后填写）
+# 必填项缺失、授权依据为空、档位非法、平台禁止自动化 → 预检直接拒绝
+#
+# 校验命令：
+#   .venv-recon\Scripts\python.exe main.py intake targets\xxx.yaml --dry-run
+# 预检通过后生成可执行目标：
+#   .venv-recon\Scripts\python.exe main.py intake targets\xxx.yaml --emit targets\xxx.exec.yaml
+# ============================================================
+
+# 目标名称（可选，默认取 vendor）；用于目录名与报告标题
+name: ""
+
+# 厂商全称（必填）：与补天项目页上的厂商名一致，报告标题会用到
+vendor: ""
+
+# 补天项目链接或编号（必填）：https://www.butian.net/Company/12345 或 Loo/submit?cid=123
+program_url: ""
+
+# 授权依据（必填，不可为空）：项目页链接、报名通过截图路径、书面授权编号等
+# 只写“已授权”“有授权”不算有效依据，预检会按空值拒绝
+authorization_ref: ""
+
+# 资产范围（必填）：一行一个；不要写协议、路径、端口
+scope:
+  domains:
+    - example.com
+  # 可选：直接声明的 IP / CIDR（CIDR 不会被自动展开扫描）
+  ips: []
+  # 是否包含子域：false 时子域不会进入清单，只测主域本身
+  include_subdomains: false
+  # 是否包含第三方资产：true 会被直接拒绝（第三方不在厂商授权范围）
+  include_third_party: false
+  # 可选：范围备注
+  note: ""
+
+# 平台/厂商禁止项（必填）：原文照抄（例如“禁止高并发、自动化扫描”）
+restrictions:
+  raw: ""
+  # 自动化是否被允许：yes / unstated / no
+  # no → 直接拒绝；unstated → 允许但会提示人工确认
+  automation_allowed: "unstated"
+
+# 档位：light（默认）/ standard / deep；非法值直接拒绝
+tier: "light"
+
+# 可选：测试账号（仅本地保存，不参与扫描；没有就留空列表）
+test_accounts: []

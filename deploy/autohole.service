@@ -1,0 +1,26 @@
+# auto-hole 定时扫描配置（Linux 服务器，systemd --user，宪法第7条：用户态运行不装系统服务）
+#
+# 安装方法：
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/autohole.service deploy/autohole.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now autohole.timer
+#   systemctl --user list-timers autohole.timer   # 查看下次触发时间
+#
+# 日志：journalctl --user -u autohole.service -f
+
+[Unit]
+Description=auto-hole daily vulnerability scan (Butian SRC)
+After=network-online.target
+
+[Service]
+Type=oneshot
+# 项目路径与目标按实际修改；可叠加多个 -t
+WorkingDirectory=/opt/auto-hole
+ExecStart=/opt/auto-hole/.venv/bin/python main.py run -t targets/myvendor.yaml
+# 宪法第7条：Home 指向项目内，杜绝工具写用户目录
+Environment=HOME=/opt/auto-hole/tools/home
+Environment=USERPROFILE=/opt/auto-hole/tools/home
+Environment=APPDATA=/opt/auto-hole/tools/home/appdata
+Environment=LOCALAPPDATA=/opt/auto-hole/tools/home/appdata
+TimeoutStartSec=14400

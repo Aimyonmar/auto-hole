@@ -1,0 +1,38 @@
+# ============================================================
+# auto-hole 配置模板 —— 复制为 config.yaml 后填写
+# 宪法约束项已标注，修改不得超出 CONSTITUTION.md 红线
+# ============================================================
+
+hunter:
+  # 鹰图 API Key：https://hunter.qianxin.com/ 个人中心获取
+  api_key: "YOUR_HUNTER_API_KEY"
+  page_size: 100            # 单页资产数（max 100）
+  max_records: 1000         # 单任务最多拉取资产数
+  quota_alert_ratio: 0.8    # 宪法第3条：日配额 80% 告警暂停
+
+llm:
+  # GLM API（OpenAI 兼容）：https://open.bigmodel.cn/
+  base_url: "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+  api_key: "YOUR_GLM_API_KEY"
+  model: "glm-4-flash"
+  timeout: 60
+
+scan:
+  # —— 宪法第3条：默认温和档；超出温和档须填 authorization_ref ——
+  concurrency: 8            # 并发（默认 8；>20 需授权依据；代码级绝对上限 64）
+  daily_request_limit: 5000 # 单目标单日请求上限（>5000 需授权依据；绝对上限 100000）
+  authorization_ref: ""     # 超出温和档时填写授权依据（SRC 页面链接 / 书面授权编号）
+  # —— 宪法第2条 ——
+  evidence_mode: "strict_readonly"  # strict_readonly | temp_file_cleanup（后者需所有者显式开启）
+  severity: "medium,high,critical"  # nuclei 严重度过滤
+  tags_include: ["cve", "rce", "unauth", "default-login", "exposure", "upload", "deserialization"]
+  tags_exclude: ["dos", "fuzz"]     # 宪法第2条：禁用标签
+  weak_password: true               # 宪法第2条：弱口令探测（default-login，命中即停）
+
+paths:
+  tools_dir: "tools"
+  nuclei_templates: "tools/nuclei-templates"
+  nuclei_templates_base: "tools/nuclei-templates-engage/base"
+  workspace: "workspace"
+  reports: "reports"
+  db: "workspace/autohole.db"

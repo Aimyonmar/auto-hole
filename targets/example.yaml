@@ -1,0 +1,13 @@
+# 目标定义示例 —— 宪法第1条：必须登记授权依据，否则拒绝执行
+name: "示例厂商公益SRC"
+vendor: "某某科技有限公司"
+# 授权依据（必填）：补天公益SRC厂商页链接 / 通用收录计划产品名
+authorization: "https://www.butian.net/xxx 公益SRC收录厂商"
+# 资产范围：主域名及其子域
+domains:
+  - example.com
+# 可选：直接指定 IP/网段（公益SRC厂商公开资产范围）
+ips: []
+# 可选：Hunter 测绘语法（针对通用1.0产品，如 web.body="致远OA"）
+hunter_query: ""
+scope_note: "仅限上述主域名及其子域名范围内的公开资产"

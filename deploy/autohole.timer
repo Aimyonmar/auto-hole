@@ -1,0 +1,11 @@
+# 每天 02:00 触发扫描（凌晨业务低峰，降低对目标影响）
+[Unit]
+Description=auto-hole daily timer
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

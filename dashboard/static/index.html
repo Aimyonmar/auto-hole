@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>auto-hole · 只读面板</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<aside class="side">
+  <div class="brand">auto-hole<span>readonly</span></div>
+  <nav id="nav">
+    <button data-view="overview" class="active">总览</button>
+    <button data-view="newjob">新建任务</button>
+    <button data-view="triage">目标体检</button>
+    <button data-view="targets">目标清单</button>
+    <button data-view="runs">运行详情</button>
+    <button data-view="assets">资产</button>
+    <button data-view="findings">命中</button>
+    <button data-view="authz">越权检测</button>
+    <button data-view="evolution">进化历史</button>
+    <button data-view="audit">审计流水</button>
+  </nav>
+  <div class="side-note">仅绑定 127.0.0.1<br>不提供扫描/写操作</div>
+</aside>
+<main>
+  <header class="topbar">
+    <div>
+      <h1 id="view-title">总览</h1>
+      <p id="view-sub" class="sub">本地数据快照，只读</p>
+    </div>
+    <div id="run-picker-wrap" class="picker" hidden>
+      <label for="run-picker">运行</label>
+      <select id="run-picker"></select>
+    </div>
+  </header>
+  <section id="view" class="view"><div class="empty">加载中…</div></section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

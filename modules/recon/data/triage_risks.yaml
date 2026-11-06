@@ -1,0 +1,171 @@
+# 目标体检离线研判库（人工维护）
+#
+# 用途：把“已探测到的产品/版本”映射成“值得深挖的方向”，不联网、不调用扫描器。
+# 所有条目都是推断，不代表目标存在漏洞；进入正式扫描前必须人工复核。
+#
+# 字段：
+#   product        展示名（尽量对齐 fingerprint product）
+#   aliases        匹配别名（大小写不敏感）
+#   hot            是否为常见热门/高重复产品
+#   repeat_reason  重复概率高的理由（推断）
+#   risks          direction / cves / version_lt / severity
+
+meta:
+  name: auto-hole triage risk directions
+  version: 1
+  updated: 2026-11-02
+
+products:
+  - product: WordPress
+    aliases: [wordpress, wp-content]
+    hot: true
+    repeat_reason: "WordPress 是补天通用收录与公开 Nday 的高重复产品，核心/插件版本差异大"
+    risks:
+      - direction: "核心版本偏低，优先核对公开 SQLi/文件包含方向与插件清单"
+        cves: ["CVE-2022-21661", "CVE-2022-21664"]
+        version_lt: "6.0"
+        severity: high
+      - direction: "插件/主题版本未识别，建议先枚举插件与主题目录再定向验证"
+        severity: medium
+
+  - product: DedeCMS
+    aliases: [dedecms, dede]
+    hot: true
+    repeat_reason: "DedeCMS 历史 Nday 多、补天收录常见，重复提交概率高"
+    risks:
+      - direction: "老版本后台/文件包含/SQL 注入方向值得人工核对"
+        version_lt: "5.8"
+        severity: high
+
+  - product: Discuz
+    aliases: [discuz]
+    hot: true
+    repeat_reason: "Discuz 论坛类目标常见，历史 Nday 与插件问题重复率高"
+    risks:
+      - direction: "核对版本、插件与 UCenter 暴露面，再决定是否定向验证"
+        version_lt: "X3.5"
+        severity: medium
+
+  - product: 致远OA
+    aliases: [致远, seeyon]
+    hot: true
+    repeat_reason: "国产 OA 是通用1.0/公益SRC 高频目标，Nday 重复概率高"
+    risks:
+      - direction: "OA 登录后接口/文件上传/未授权访问方向需人工确认版本与补丁"
+        severity: high
+
+  - product: 通达OA
+    aliases: [通达, tongda]
+    hot: true
+    repeat_reason: "通达OA 历史未授权/上传问题多，公开披露重复概率高"
+    risks:
+      - direction: "优先核对未授权接口、上传点与版本补丁"
+        severity: high
+
+  - product: 泛微OA
+    aliases: [泛微, weaver, ecology]
+    hot: true
+    repeat_reason: "泛微 OA 是常见高价值目标，历史 Nday 公开度高"
+    risks:
+      - direction: "核对 ecology/weaver 路径、登录入口与版本补丁"
+        severity: high
+
+  - product: 若依RuoYi
+    aliases: [ruoyi, 若依]
+    hot: true
+    repeat_reason: "若依是通用1.0 常见产品，默认配置/接口问题重复率高"
+    risks:
+      - direction: "核对默认口令、Druid/Actuator 暴露与接口鉴权"
+        severity: medium
+
+  - product: Nacos
+    aliases: [nacos]
+    hot: true
+    repeat_reason: "Nacos 是云原生常见组件，历史鉴权绕过公开度高"
+    risks:
+      - direction: "核对默认 token/鉴权开关与配置接口（仅人工验证）"
+        cves: ["CVE-2021-29441"]
+        severity: high
+
+  - product: Jenkins
+    aliases: [jenkins]
+    hot: true
+    repeat_reason: "Jenkins 常暴露在公网，历史 Nday 与弱口令重复率高"
+    risks:
+      - direction: "核对匿名访问、脚本控制台与版本补丁"
+        cves: ["CVE-2024-23897", "CVE-2018-1000861"]
+        severity: high
+
+  - product: GitLab
+    aliases: [gitlab]
+    hot: true
+    repeat_reason: "GitLab 是常见高价值目标，公开 CVE 与配置问题重复率高"
+    risks:
+      - direction: "核对版本与公开 CVE，优先只读验证"
+        cves: ["CVE-2023-7028", "CVE-2021-22205"]
+        severity: high
+
+  - product: Grafana
+    aliases: [grafana]
+    hot: true
+    repeat_reason: "Grafana 公网暴露常见，插件/路径穿越历史问题重复率高"
+    risks:
+      - direction: "核对版本、插件与未授权仪表盘"
+        cves: ["CVE-2021-43798"]
+        severity: medium
+
+  - product: Tomcat
+    aliases: [tomcat]
+    hot: true
+    repeat_reason: "Tomcat 存量极大，管理页/弱口令/历史 CVE 重复概率高"
+    risks:
+      - direction: "核对 manager/host-manager 暴露与版本"
+        cves: ["CVE-2020-1938"]
+        severity: medium
+
+  - product: WebLogic
+    aliases: [weblogic]
+    hot: true
+    repeat_reason: "WebLogic 历史反序列化 Nday 公开度极高，重复概率高"
+    risks:
+      - direction: "核对 console 暴露与版本，反序列化方向需人工授权验证"
+        cves: ["CVE-2020-14882"]
+        severity: high
+
+  - product: Shiro
+    aliases: [shiro]
+    hot: true
+    repeat_reason: "Shiro 默认密钥/反序列化是常见重复项"
+    risks:
+      - direction: "核对 rememberMe 与版本，禁止直接利用链验证"
+        cves: ["CVE-2016-4437"]
+        severity: high
+
+  - product: ThinkPHP
+    aliases: [thinkphp]
+    hot: true
+    repeat_reason: "ThinkPHP 历史 RCE/信息泄露公开度高"
+    risks:
+      - direction: "核对版本与入口文件，RCE 方向需人工授权验证"
+        severity: high
+
+  - product: Nginx
+    aliases: [nginx]
+    hot: false
+    risks:
+      - direction: "关注配置型问题（目录列表、备份文件、代理暴露），非版本 CVE"
+        severity: low
+
+  - product: Apache
+    aliases: [apache]
+    hot: false
+    risks:
+      - direction: "关注目录列表、.htaccess/备份文件与已公开版本问题"
+        severity: low
+
+  - product: IIS
+    aliases: [iis, microsoft-iis]
+    hot: false
+    risks:
+      - direction: "关注短文件名、目录列表与旧版本配置问题"
+        severity: low

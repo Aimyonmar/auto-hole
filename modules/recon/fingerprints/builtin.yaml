@@ -1,0 +1,577 @@
+# auto-hole 内置指纹库（recon.engine v1）
+#
+# 结构说明：
+#   id            规则唯一标识
+#   product       归一化产品名（尽量对齐补天通用收录产品表）
+#   confidence    命中置信度（0~1），最终低于 fingerprint.min_confidence 会被丢弃
+#   logic         any：任一条件成立；all：全部条件成立
+#   min_matched   any 逻辑下，命中条件数低于该值时按 weak_match_penalty 降权（抑制误报）
+#   match         条件列表，类型：header / title / body / url / status / favicon
+#   negative      排除条件，命中即否决该规则
+#   template_dirs 命中后建议定向的 nuclei 模板目录（分级调度用）
+#
+# 维护约定：
+#   - 只收录有明确、稳定页面特征的指纹；不写无依据的 hash
+#   - 单一过泛的关键词（如 "wps"、"admin"）必须配 min_matched ≥ 2 或加 negative
+meta:
+  name: auto-hole builtin fingerprints
+  version: 1
+  updated: 2026-11-02
+
+rules:
+  # ---------------- 国产 OA / ERP ----------------
+  - id: seeyon-oa
+    product: 致远OA
+    confidence: 0.95
+    logic: any
+    min_matched: 1
+    tags: [oa, seeyon]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: title, contains: "致远"}
+      - {type: body, contains: "seeyon"}
+      - {type: header, name: "Server", contains: "seeyon"}
+
+  - id: tongda-oa
+    product: 通达OA
+    confidence: 0.9
+    logic: any
+    tags: [oa, tongda]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "通达"}
+      - {type: body, contains: "tongda"}
+      - {type: body, contains: "通达oa"}
+
+  - id: weaver-oa
+    product: 泛微OA
+    confidence: 0.9
+    logic: any
+    tags: [oa, weaver]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: title, contains: "泛微"}
+      - {type: body, contains: "/weaver/"}
+      - {type: body, contains: "ecology"}
+
+  - id: landray-oa
+    product: 蓝凌OA
+    confidence: 0.9
+    logic: any
+    tags: [oa, landray]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "蓝凌"}
+      - {type: body, contains: "landray"}
+      - {type: body, contains: "/ekp/"}
+
+  - id: yonyou-yonbip
+    product: 用友YonBIP
+    confidence: 0.9
+    logic: any
+    tags: [erp, yonyou]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "用友"}
+      - {type: body, contains: "yonbip"}
+      - {type: body, contains: "yonyou"}
+
+  - id: yonyou-grp-u8
+    product: 用友GRP-U8
+    confidence: 0.85
+    logic: any
+    tags: [erp, yonyou]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "grp-u8"}
+      - {type: body, contains: "grpu8"}
+
+  - id: ruoyi
+    product: 若依RuoYi
+    confidence: 0.9
+    logic: any
+    tags: [java, ruoyi]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: title, contains: "若依"}
+      - {type: body, contains: "ruoyi"}
+
+  - id: zentao
+    product: 禅道ZenTao
+    confidence: 0.85
+    logic: any
+    tags: [oa, zentao]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "禅道"}
+      - {type: body, contains: "zentao"}
+      - {type: body, contains: "zentaopms"}
+
+  # ---------------- Web 中间件 / 框架 ----------------
+  - id: nginx
+    product: Nginx
+    confidence: 0.95
+    logic: any
+    tags: [server]
+    match:
+      - {type: header, name: "Server", contains: "nginx"}
+    negative:
+      - {type: header, name: "Server", contains: "openresty"}
+
+  - id: openresty
+    product: OpenResty
+    confidence: 0.95
+    logic: any
+    tags: [server]
+    match:
+      - {type: header, name: "Server", contains: "openresty"}
+
+  - id: apache-httpd
+    product: Apache
+    confidence: 0.9
+    logic: any
+    tags: [server]
+    match:
+      - {type: header, name: "Server", contains: "apache"}
+    negative:
+      - {type: header, name: "Server", contains: "apache-coyote"}
+
+  - id: tomcat
+    product: Tomcat
+    confidence: 0.9
+    logic: any
+    tags: [java, server]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: header, name: "Server", contains: "apache-coyote"}
+      - {type: header, name: "X-Powered-By", contains: "servlet"}
+      - {type: header, name: "Server", contains: "tomcat"}
+
+  - id: iis
+    product: IIS
+    confidence: 0.95
+    logic: any
+    tags: [server, windows]
+    match:
+      - {type: header, name: "Server", contains: "microsoft-iis"}
+
+  - id: weblogic
+    product: WebLogic
+    confidence: 0.9
+    logic: any
+    tags: [java, weblogic]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: header, name: "Server", contains: "weblogic"}
+      - {type: body, contains: "/console/login/loginform.jsp"}
+
+  - id: jboss
+    product: JBoss
+    confidence: 0.85
+    logic: any
+    tags: [java, jboss]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: header, name: "Server", contains: "jboss"}
+      - {type: header, name: "Server", contains: "wildfly"}
+
+  - id: thinkphp
+    product: ThinkPHP
+    confidence: 0.9
+    logic: any
+    tags: [php, thinkphp]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: header, name: "X-Powered-By", contains: "thinkphp"}
+      - {type: body, contains: "thinkphp"}
+
+  - id: shiro
+    product: Shiro
+    confidence: 0.9
+    logic: any
+    tags: [java, shiro]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: header, name: "Set-Cookie", contains: "rememberme"}
+
+  - id: springboot-whitelabel
+    product: SpringBoot
+    confidence: 0.85
+    logic: any
+    tags: [java, spring]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: body, contains: "whitelabel error page"}
+
+  - id: struts2
+    product: Apache-Struts2
+    confidence: 0.75
+    logic: any
+    tags: [java, struts]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "struts problem report"}
+      - {type: body, contains: "/struts/"}
+
+  # ---------------- 常见自建服务 ----------------
+  - id: nacos
+    product: Nacos
+    confidence: 0.9
+    logic: any
+    tags: [java, nacos]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: body, contains: "nacos"}
+      - {type: title, contains: "nacos"}
+
+  - id: druid
+    product: Druid
+    confidence: 0.85
+    logic: any
+    tags: [java, druid]
+    template_dirs: ["http/exposures"]
+    match:
+      - {type: title, contains: "druid"}
+      - {type: body, contains: "druid stat"}
+
+  - id: xxl-job
+    product: XXL-JOB
+    confidence: 0.9
+    logic: any
+    tags: [java, xxljob]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: body, contains: "xxl-job"}
+      - {type: title, contains: "xxl-job"}
+
+  - id: jumpserver
+    product: JumpServer
+    confidence: 0.9
+    logic: any
+    tags: [jumpserver]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "jumpserver"}
+      - {type: title, contains: "jumpserver"}
+
+  - id: grafana
+    product: Grafana
+    confidence: 0.9
+    logic: any
+    tags: [monitor, grafana]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "grafana"}
+      - {type: body, contains: "grafana-app"}
+
+  - id: zabbix
+    product: Zabbix
+    confidence: 0.9
+    logic: any
+    tags: [monitor, zabbix]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: title, contains: "zabbix"}
+      - {type: body, contains: "zabbix"}
+
+  - id: gitlab
+    product: GitLab
+    confidence: 0.9
+    logic: any
+    tags: [gitlab]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: header, name: "Set-Cookie", contains: "_gitlab_session"}
+      - {type: body, contains: "gitlab"}
+
+  - id: jenkins
+    product: Jenkins
+    confidence: 0.95
+    logic: any
+    tags: [ci, jenkins]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: header, name: "X-Jenkins", regex: "."}
+      - {type: title, contains: "jenkins"}
+
+  - id: jira
+    product: Jira
+    confidence: 0.85
+    logic: any
+    tags: [atlassian, jira]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "atlassian jira"}
+      - {type: header, name: "X-AREQUESTID", regex: "."}
+
+  - id: coremail
+    product: Coremail
+    confidence: 0.85
+    logic: any
+    tags: [mail, coremail]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "coremail"}
+      - {type: title, contains: "coremail"}
+
+  - id: zimbra
+    product: Zimbra
+    confidence: 0.85
+    logic: any
+    tags: [mail, zimbra]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "zimbra"}
+
+  # ---------------- 安全设备 / 硬件设备 ----------------
+  - id: hikvision
+    product: 海康威视安防平台
+    confidence: 0.85
+    logic: any
+    tags: [iot, hikvision]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "hikvision"}
+      - {type: body, contains: "ivms"}
+
+  - id: sangfor-ssl-vpn
+    product: 深信服SSL-VPN
+    confidence: 0.85
+    logic: any
+    tags: [vpn, sangfor]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "sangfor"}
+      - {type: title, contains: "深信服"}
+
+  - id: fortigate
+    product: FortiGate
+    confidence: 0.85
+    logic: any
+    tags: [vpn, fortinet]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "fortigate"}
+      - {type: body, contains: "fortios"}
+
+  - id: vmware-esxi
+    product: VMware ESXi
+    confidence: 0.85
+    logic: any
+    tags: [vm, vmware]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "vmware esxi"}
+      - {type: body, contains: "esxconsole"}
+
+  # ---------------- CMS / 建站系统 ----------------
+  - id: wordpress
+    product: WordPress
+    confidence: 0.85
+    logic: any
+    tags: [cms, wordpress]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "wp-content"}
+      - {type: header, name: "Link", contains: "wp-json"}
+
+  - id: discuz
+    product: Discuz
+    confidence: 0.85
+    logic: any
+    tags: [cms, discuz]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "discuz!"}
+      - {type: header, name: "Set-Cookie", contains: "discuz_"}
+
+  - id: dedecms
+    product: DedeCMS
+    confidence: 0.85
+    logic: any
+    tags: [cms, dedecms]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "dedecms"}
+      - {type: body, contains: "power by dedecms"}
+
+  - id: phpcms
+    product: PHPCMS
+    confidence: 0.8
+    logic: any
+    tags: [cms, phpcms]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "phpcms"}
+
+  - id: wps
+    product: WPS Office
+    confidence: 0.8
+    logic: any
+    min_matched: 2
+    tags: [office, wps]
+    match:
+      - {type: title, contains: "wps"}
+      - {type: body, contains: "wps office"}
+
+  # ---------------- 高价值补充：国产 OA / ERP / 网关 / 建站 ----------------
+  # 这些产品在补天通用/公益收录中出现频率高，且常见未授权/文件上传/RCE 类 Nday
+  - id: baota-panel
+    product: 宝塔面板
+    confidence: 0.9
+    logic: any
+    tags: [panel, baota]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: title, contains: "宝塔"}
+      - {type: body, contains: "bt-panel"}
+      - {type: body, contains: "/btwaf/"}
+
+  - id: kingdee-eas
+    product: 金蝶EAS
+    confidence: 0.85
+    logic: any
+    tags: [erp, kingdee]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "金蝶"}
+      - {type: body, contains: "kingdee"}
+
+  - id: kingdee-k3cloud
+    product: 金蝶K3Cloud
+    confidence: 0.85
+    logic: any
+    tags: [erp, kingdee]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "k3cloud"}
+      - {type: body, contains: "金蝶k3"}
+
+  - id: wanhu-oa
+    product: 万户OA
+    confidence: 0.85
+    logic: any
+    tags: [oa, wanhu]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "万户"}
+      - {type: body, contains: "wanhu"}
+
+  - id: htoa
+    product: 华天动力OA
+    confidence: 0.85
+    logic: any
+    tags: [oa, htoa]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "华天"}
+      - {type: body, contains: "htoa"}
+
+  - id: jinhe-oa
+    product: 金和OA
+    confidence: 0.85
+    logic: any
+    tags: [oa, jinhe]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "金和"}
+      - {type: body, contains: "jinhe"}
+
+  - id: jeecgboot
+    product: JeecgBoot
+    confidence: 0.9
+    logic: any
+    tags: [java, jeecg]
+    template_dirs: ["http/cves", "http/exposures"]
+    match:
+      - {type: title, contains: "jeecg"}
+      - {type: body, contains: "jeecg"}
+
+  - id: wkcrm
+    product: 悟空CRM
+    confidence: 0.85
+    logic: any
+    tags: [crm, wkcrm]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "悟空crm"}
+      - {type: body, contains: "wkcrm"}
+
+  - id: empirecms
+    product: 帝国CMS
+    confidence: 0.85
+    logic: any
+    tags: [cms, empirecms]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: title, contains: "帝国cms"}
+      - {type: body, contains: "empirecms"}
+
+  - id: dahua-icc
+    product: 大华安防平台
+    confidence: 0.8
+    logic: any
+    tags: [iot, dahua]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "dahua"}
+      - {type: title, contains: "大华"}
+
+  - id: uniview
+    product: 宇视安防平台
+    confidence: 0.8
+    logic: any
+    tags: [iot, uniview]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "uniview"}
+      - {type: title, contains: "宇视"}
+
+  - id: topsec
+    product: 天融信
+    confidence: 0.8
+    logic: any
+    tags: [security, topsec]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "topsec"}
+      - {type: title, contains: "天融信"}
+
+  - id: netsense
+    product: 网康
+    confidence: 0.8
+    logic: any
+    tags: [security, netsense]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "netsense"}
+      - {type: title, contains: "网康"}
+
+  - id: huawei-usg
+    product: 华为USG防火墙
+    confidence: 0.8
+    logic: any
+    tags: [security, huawei]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "usg6000"}
+      - {type: body, contains: "huawei usg"}
+
+  - id: h3c
+    product: H3C
+    confidence: 0.75
+    logic: any
+    tags: [network, h3c]
+    match:
+      - {type: title, contains: "h3c"}
+      - {type: body, contains: "h3c web"}      # 只认组合词，避免 hex 误报
+
+  - id: ruijie
+    product: 锐捷
+    confidence: 0.8
+    logic: any
+    tags: [network, ruijie]
+    template_dirs: ["http/cves"]
+    match:
+      - {type: body, contains: "ruijie"}
+      - {type: title, contains: "锐捷"}

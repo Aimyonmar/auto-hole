@@ -1,0 +1,183 @@
+# ============================================================
+# auto-hole 增强采集（modules/recon）独立配置
+# 不覆盖主项目 config.yaml；缺失时使用模块内置默认（standard 温和档）
+#
+# 底线（不可通过本文件突破）：
+#   - 只对 targets/*.yaml 中显式声明且有 authorization 的目标请求
+#   - 并发/速率必须有界（代码级硬顶 并发 64、200 rps），不存在无上限模式
+#   - 只读不写入目标，命中即记录证据，不深入取数
+#   - 每个请求写 workspace/recon/audit.jsonl
+# ============================================================
+version: 1
+
+# 当前档位：light | standard | deep（CLI --profile 可临时覆盖）
+# 面板可选档位只有 light / standard（与 dashboard/jobs.py 校验一致）；deep 仅供 CLI 显式使用。
+profile: standard
+
+# 分级策略：档位决定并发、速率、端口范围、规模上限与是否连带扫描
+profiles:
+  light:
+    concurrency: 3                 # 首次对新目标建议 light
+    requests_per_second: 5
+    probe_ports: [80, 443]
+    probe_timeout: 8
+    probe_retries: 1
+    max_hosts: 300
+    max_body_bytes: 262144
+    follow_redirects: true
+    favicon: false                 # 额外请求 /favicon.ico，默认关闭省请求
+    scan_enabled: false
+    scan_severity: "high,critical"
+    scan_tags_include: ["cve", "rce", "unauth", "default-login", "exposure"]
+    scan_tags_exclude: ["dos", "fuzz", "intrusive"]
+    scan_max_urls: 100             # 与打包态对齐：取更保守的一方
+    scan_grouped: true             # 按产品分组，只跑该产品相关模板
+    scan_unidentified: false       # 未识别产品默认不扫（省配额，且不回退全量）
+    scan_max_groups: 50
+    # URL/路径/参数发现（light 最保守）
+    discover_enabled: true
+    crawl_depth: 1
+    crawl_max_urls: 30
+    crawl_concurrency: 2
+    crawl_same_origin: true
+    js_extract: true
+    path_scan_enabled: true
+    path_scan_max_paths: 20
+
+  standard:
+    concurrency: 8                 # 项目既有约定：首跑并发 8
+    requests_per_second: 20
+    probe_ports: [80, 443, 8080, 8443, 8000, 8888, 9090, 7001, 7002]
+    probe_timeout: 10
+    probe_retries: 1
+    max_hosts: 2000
+    max_body_bytes: 262144
+    follow_redirects: true
+    favicon: false
+    scan_enabled: false            # 保留现状：standard 默认不连带扫描；batch 任务会按清单显式打开
+    scan_severity: "medium,high,critical"
+    scan_tags_include: ["cve", "rce", "unauth", "default-login", "exposure", "upload", "deserialization"]
+    scan_tags_exclude: ["dos", "fuzz", "intrusive"]
+    scan_max_urls: 500
+    scan_grouped: true
+    scan_unidentified: false
+    scan_max_groups: 50
+    discover_enabled: true
+    crawl_depth: 2
+    crawl_max_urls: 200
+    crawl_concurrency: 4
+    crawl_same_origin: true
+    js_extract: true
+    path_scan_enabled: true
+    path_scan_max_paths: 60
+
+  deep:
+    concurrency: 16
+    requests_per_second: 50
+    probe_ports: [80, 443, 8080, 8443, 8000, 8001, 8081, 8888, 9090, 7001, 7002]
+    probe_timeout: 12
+    probe_retries: 2
+    max_hosts: 8000
+    max_body_bytes: 262144
+    follow_redirects: true
+    favicon: true
+    scan_enabled: true             # deep 才默认连带扫描
+    scan_severity: "medium,high,critical"
+    scan_tags_include: ["cve", "rce", "unauth", "default-login", "exposure", "upload", "deserialization"]
+    scan_tags_exclude: ["dos", "fuzz", "intrusive"]
+    scan_max_urls: 1000
+    scan_grouped: true
+    scan_unidentified: true        # 深度档：未识别产品也跑默认模板
+    scan_max_groups: 100
+    discover_enabled: true
+    crawl_depth: 3
+    crawl_max_urls: 800
+    crawl_concurrency: 8
+    crawl_same_origin: true
+    js_extract: true
+    path_scan_enabled: true
+    path_scan_max_paths: 120
+
+# 数据源插件：enabled 顺序即执行顺序；未注册/缺依赖的会被跳过并记录原因
+sources:
+  enabled: ["seed", "subfinder", "hunter", "import"]
+  plugins_dir: ""                  # 可选：外部插件目录（相对项目根）
+  import_dir: "workspace/import"   # 外部资产清单：<目标名>.txt（每行 host[:port] 或 URL）
+  path_dict: "modules/recon/dicts/sensitive_paths.txt"   # 敏感路径字典
+  subfinder:
+    all_sources: true
+    timeout: 600
+    resolve: true                  # dnsx 解析存活过滤，丢弃不可解析子域
+  hunter:
+    max_records: 1000
+    allow_guest: true              # 免费账号自动降级游客模式（保持既有约定）
+
+probe:
+  connect_timeout: 5
+  max_redirects: 5
+  user_agent: "auto-hole-recon/1.0 (authorized security testing)"
+  verify_tls: false                # 授权目标常见自签证书
+  min_delay_ms: 0                  # 每请求额外固定延迟，网络敏感目标可调大
+  trust_env: false                 # 不继承系统代理环境变量，保证请求路径可控可复现
+
+fingerprint:
+  library: "modules/recon/fingerprints/builtin.yaml"
+  min_confidence: 0.6              # 低于该置信度的指纹丢弃（误报抑制）
+  weak_match_penalty: 0.7          # any 逻辑下证据不足时的降权系数
+  body_limit: 262144               # 只看正文前 256KB
+  enable_prefilter: true           # 字面量前置过滤（批量匹配加速）
+
+limits:
+  daily_request_limit: 5000        # 单目标单日请求上限（持久化计数）
+  burst: 1                         # 令牌桶突发容量
+  min_rps: 2                       # 自适应降速下限，防止降到 0
+  backoff_base: 0.5
+  backoff_max: 8
+  failure_threshold: 8             # 连续失败 N 次触发熔断
+  cooldown_seconds: 60
+
+audit:
+  enabled: true
+  path: "workspace/recon"          # 实际写入 <path>/audit.jsonl
+
+# 价值评分：决定“先提交哪个”，以及是否值得做证据包
+# 说明：这是排序用的本地启发式，不等于平台定价
+value:
+  generic_bonus: 10                # 通用1.0（产品可复用）加分
+  public_bonus: 0                  # 公益SRC 加分
+  min_score_for_evidence: 40       # 低于该分不生成证据包
+  min_score_to_submit: 45          # 低于该分建议不提交
+  evidence_enabled: true           # 运行结束自动生成证据包
+
+state:
+  dir: "workspace/recon"           # <dir>/<target>/state.json|assets.jsonl|summary.json
+
+# 只读越权检测（IDOR / 水平 + 垂直；代码只发 GET，不实现写方法）
+authz:
+  enabled: true                    # 有账号元数据时允许执行
+  auto_run: true                   # all 阶段发现账号元数据时自动执行
+  max_requests: 200                # 每目标本次越权请求上限（独立预算，共享令牌桶）
+  similarity_threshold: 0.90       # B 与 A 内容相似度 ≥ 此值才判疑似
+  public_similarity: 0.92          # 匿名访问与 A 相似度 ≥ 此值 → 公共页抑制
+  max_candidates: 100
+  max_vertical_paths: 30
+  max_collect_pages: 10
+  response_truncate: 400           # 证据响应截断字符数
+  accounts_dir: "targets/authz"
+  vault_path: "workspace/authz/vault.enc"
+  key_path: "workspace/authz/vault.key"
+  vertical_paths: []               # 可在账号元数据里按目标覆盖
+
+# 目标体检（只做侦察/研判，禁止任何 nuclei/模板扫描）
+triage:
+  max_requests: 60                 # 每目标体检请求上限（独立预算）
+  max_hosts: 50
+  max_exposure_paths: 12           # 每个存活主机最多探测的暴露面路径
+  sources: ["seed", "import"]      # 只允许被动种子 + 本地清单，不联网查外部数据源
+  max_body_chars: 4096             # 版本/暴露面研判只读前 4KB，不存原文
+
+# WAF 拦截自动中止（探测/发现/扫描任一阶段）
+waf:
+  enabled: true
+  stop_after: 1                    # 1=首次识别即停；N=累计 N 次命中后停
+

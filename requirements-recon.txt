@@ -1,0 +1,12 @@
+# 增强采集与扫描模块（modules/recon）独立环境依赖
+# 安装：python -m venv .venv-recon
+#       .venv-recon\Scripts\python.exe -m pip install -r requirements-recon.txt
+#
+# 说明：运行时依赖与主项目一致（pyyaml/requests/rich），不引入新的第三方运行库；
+#       独立环境的意义是隔离开发/测试依赖，避免污染主 .venv。
+pyyaml>=6.0
+requests>=2.31.0
+rich>=13.7.0        # main.py 入口需要（recon 子命令同样经由 main.py 分发）
+
+# 仅测试用
+pytest>=8.0

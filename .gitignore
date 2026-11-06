@@ -1,0 +1,51 @@
+# auto-hole .gitignore
+# 原则：源码与示例配置入库；本地凭据、目标清单、扫描产物、个人资料一律不入库。
+
+# ---- 虚拟环境 / 依赖 ----
+.venv/
+.venv-recon/
+venv/
+node_modules/
+
+# ---- 本地凭据与私有配置（只保留 *.example.yaml）----
+config.yaml
+*.key
+*vault.enc
+*vault.key
+accounts.yaml
+batch.yaml
+.env
+.env.*
+
+# ---- 授权目标清单（真实厂商/域名，不入公开仓库）----
+# 仅保留目标模板与脱敏示例
+targets/*.yaml
+!targets/_template.yaml
+!targets/example.yaml
+targets/authorized/
+
+# ---- 扫描产物 / 证据 / 数据库 / 日志 ----
+workspace/
+outputs/
+reports/
+logs/
+*.db
+*.db-journal
+*.jsonl
+*.log
+.screenshots/
+
+# ---- 外部二进制与构建产物 ----
+tools/
+build/
+dist/
+
+# ---- 缓存 ----
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache/
+.trae/
+
+# ---- 个人资料 ----
+resume/
