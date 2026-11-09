@@ -1,6 +1,6 @@
 # 02 · 现状梳理与差距清单
 
-> 对象：`d:\my-project\auto-hole`（Python，SQLite 落库，外部二进制 nuclei/subfinder/httpx/dnsx）。
+> 对象：`auto-hole`（Python，SQLite 落库，外部二进制 nuclei/subfinder/httpx/dnsx）。
 > 梳理范围：采集（资产收集）、存活探测、指纹、扫描（nuclei）、限速、去重、断点、报告。
 
 ---
@@ -9,23 +9,23 @@
 
 | 维度 | 现有实现 | 位置 |
 |---|---|---|
-| 入口 | `doctor / collect / scan / judge / report / run` 六个子命令 | [main.py](file:///d:/my-project/auto-hole/main.py#L121-L160) |
-| 资产收集 | 硬编码两路：Hunter API + `subfinder → dnsx → httpx` | [pipeline.py](file:///d:/my-project/auto-hole/core/pipeline.py#L25-L78) |
-| 数据源 | 只支持 hunter / subfinder；无插件机制，新增源必须改 pipeline | [hunter.py](file:///d:/my-project/auto-hole/core/hunter.py#L42-L80)、[subdomain.py](file:///d:/my-project/auto-hole/core/subdomain.py#L53-L84) |
-| 结果结构 | 每个源各拼一个 dict（字段名靠约定），`source` 是单字符串 | [pipeline.py](file:///d:/my-project/auto-hole/core/pipeline.py#L43-L47) |
-| 去重 | 只在 SQLite 唯一索引 `(target, host, port)` 层去重；同资产多源命中时后写覆盖前写 | [db.py](file:///d:/my-project/auto-hole/core/db.py#L11-L26) |
-| 存活探测 | 调 `httpx -json`，取 title/tech/status/webserver | [subdomain.py](file:///d:/my-project/auto-hole/core/subdomain.py#L93-L160) |
-| 指纹 | 37 个国产产品的“别名关键词表”，对 `tech` 字符串和标题做 `in` 匹配，无规则、无置信度、无排除项 | [fingerprint.py](file:///d:/my-project/auto-hole/core/fingerprint.py#L18-L83) |
-| 端口 | 无端口扫描；仅 httpx `-ports` 覆盖 9 个常见 Web 端口 | [subdomain.py](file:///d:/my-project/auto-hole/core/subdomain.py#L114-L115) |
+| 入口 | `doctor / collect / scan / judge / report / run` 六个子命令 | [main.py](../../main.py#L121-L160) |
+| 资产收集 | 硬编码两路：Hunter API + `subfinder → dnsx → httpx` | [pipeline.py](../../core/pipeline.py#L25-L78) |
+| 数据源 | 只支持 hunter / subfinder；无插件机制，新增源必须改 pipeline | [hunter.py](../../core/hunter.py#L42-L80)、[subdomain.py](../../core/subdomain.py#L53-L84) |
+| 结果结构 | 每个源各拼一个 dict（字段名靠约定），`source` 是单字符串 | [pipeline.py](../../core/pipeline.py#L43-L47) |
+| 去重 | 只在 SQLite 唯一索引 `(target, host, port)` 层去重；同资产多源命中时后写覆盖前写 | [db.py](../../core/db.py#L11-L26) |
+| 存活探测 | 调 `httpx -json`，取 title/tech/status/webserver | [subdomain.py](../../core/subdomain.py#L93-L160) |
+| 指纹 | 37 个国产产品的“别名关键词表”，对 `tech` 字符串和标题做 `in` 匹配，无规则、无置信度、无排除项 | [fingerprint.py](../../core/fingerprint.py#L18-L83) |
+| 端口 | 无端口扫描；仅 httpx `-ports` 覆盖 9 个常见 Web 端口 | [subdomain.py](../../core/subdomain.py#L114-L115) |
 | URL/路径发现 | 无爬虫、无历史 URL、无目录字典 | 不存在 |
-| 漏洞验证 | nuclei：severity + tags + 写入类 POC 关键词过滤 + 指纹定向目录 | [scanner.py](file:///d:/my-project/auto-hole/core/scanner.py#L24-L50) |
-| 命中去重 | `(template_id, host)` 唯一索引（跨目标也拦） | [db.py](file:///d:/my-project/auto-hole/core/db.py#L115-L120) |
-| 限速 | 单目标“日请求计数”SQLite 熔断；无每秒速率、无退避、无熔断恢复；计数点在“资产登记”而非真实请求 | [constitution.py](file:///d:/my-project/auto-hole/core/constitution.py#L118-L154) |
-| 并发 | 由 nuclei/httpx 的 `-rate-limit`/`-concurrency` 参数承载；父进程本身无并发控制 | [subdomain.py](file:///d:/my-project/auto-hole/core/subdomain.py#L48-L51) |
+| 漏洞验证 | nuclei：severity + tags + 写入类 POC 关键词过滤 + 指纹定向目录 | [scanner.py](../../core/scanner.py#L24-L50) |
+| 命中去重 | `(template_id, host)` 唯一索引（跨目标也拦） | [db.py](../../core/db.py#L115-L120) |
+| 限速 | 单目标“日请求计数”SQLite 熔断；无每秒速率、无退避、无熔断恢复；计数点在“资产登记”而非真实请求 | [constitution.py](../../core/constitution.py#L118-L154) |
+| 并发 | 由 nuclei/httpx 的 `-rate-limit`/`-concurrency` 参数承载；父进程本身无并发控制 | [subdomain.py](../../core/subdomain.py#L48-L51) |
 | 断点续跑 | 无 | 不存在 |
-| 结果落库 | SQLite `assets`/`findings`；报告为 Markdown | [db.py](file:///d:/my-project/auto-hole/core/db.py#L11-L48)、[report.py](file:///d:/my-project/auto-hole/core/report.py#L70) |
+| 结果落库 | SQLite `assets`/`findings`；报告为 Markdown | [db.py](../../core/db.py#L11-L48)、[report.py](../../core/report.py#L70) |
 | 审计 | 无请求级日志 | 不存在 |
-| 测试 | 2 个脚本式测试（宪法负向 15 项 + 本地冒烟） | [tests/](file:///d:/my-project/auto-hole/tests) |
+| 测试 | 2 个脚本式测试（宪法负向 15 项 + 本地冒烟） | [tests/](../../tests) |
 
 ---
 
